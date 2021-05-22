@@ -1,7 +1,7 @@
 class Sticker {
     constructor(parent, key, id, zIndexer) {
         this._elem = document.createElement('textarea');
-        this._elem.classList = 'sticker';
+        this._elem.className = 'sticker';
 
         this._parent = parent;
         this._parent.appendChild(this._elem);
@@ -9,8 +9,7 @@ class Sticker {
         this._zIndexer = zIndexer;
          
         this._initRelocation();
-        this._initRemove();
-        this._initRemove();
+        this._initRemove();        
         this._initAtopState();
 
         this._watchSize();
@@ -24,10 +23,11 @@ class Sticker {
         this._setH(h);
         this._setX(x);
         this._setY(y);
-        this._setText(" ");
+        this._setText('');
         //в момент создания поверх всех
         this._setMaxZ();
     }
+
     restore(data) {
         this._setW(data.w);
         this._setH(data.h);
@@ -37,21 +37,23 @@ class Sticker {
 
         this._setText(data.text);
     }
+
     _save() {
         let data = {
             x: this._getX(),
             y: this._getY(),
-            z: this._getZ(),
+            z: this.getZ(),
             w: this._getW(),
             h: this._getH(),
             text: this._getText(),           
         };
+
         this._stock.save(data);
     }
     //установить ширину
     _setW(value) {
         this._w = value;
-        this._elem.style.width = value + "px";
+        this._elem.style.width = value + 'px';
 
         this._save(); //cохраняем в локальное хранилище
     }
@@ -62,7 +64,7 @@ class Sticker {
 
     _setH(value) {
         this._h = value;
-        this._elem.style.height = value + "px";
+        this._elem.style.height = value + 'px';
 
         this._save();
     }
@@ -73,7 +75,7 @@ class Sticker {
     //установить координаты по оси X
     _setX(value) {
         this._x = value;
-        this._elem.style.left = value + "px";
+        this._elem.style.left = value + 'px';
 
         this._save();
     }
@@ -84,7 +86,7 @@ class Sticker {
 
     _setY(value) {
         this._y = value;
-        this._elem.style.top = value + "px";
+        this._elem.style.top = value + 'px';
 
         this._save();
     }
@@ -100,8 +102,8 @@ class Sticker {
     }
     //прочитываем с элемента
     getZ() {
-        return this._z;
-      //return parseInt(this._elem.style.zIndex);
+        //return this._z;
+      return parseInt(this._elem.style.zIndex);
     }
     //установить текст в textarea
     _setText(text) {
@@ -117,13 +119,13 @@ class Sticker {
     _setMaxZ() {
         let maxZ = this._zIndexer.getMaxZ();
         //если макс zIndex не равен текущему
-        if(maxZ !== this._getZ() || maxZ === 0 ) {
+        if(maxZ !== this.getZ() || maxZ === 0 ) {
             this._setZ(maxZ + 1);
         }
     }
     //отслеживаем изменения размера стикера (resize не работает)
     _watchSize() {
-        this.elem.addEventListener('mouseup', () => {
+        this._elem.addEventListener('mouseup', () => {
             let newWidth = parseInt(this._elem.clientWidth);
             let newHeight = parseInt(this._elem.clientHeight);
 
@@ -192,11 +194,12 @@ class Sticker {
         add(sticker) {
             this._stickers.push(sticker);
         }
+
         getMaxZ() {
             if (this._stickers.length !== 0) {
                 let zindexes = [];
 
-                this.stickers.forEach(sticker => {
+                this._stickers.forEach(sticker => {
                     zindexes.push(sticker.getZ());
                 });
                 //находим максимальное значеник в масиве
@@ -208,17 +211,50 @@ class Sticker {
     }
     //хранилище
     class Stock {
-        constructor(key, id  = null) {
+        constructor(key, id = null) {
             this._storage = new Storage(key);
-            this._id = id
+            this._id = id;
         }
-
+        //берет данные из локального хранилища
         save(value) {
             let data = this._extract();
-            data[_this,_id] = value;
-            _this.compact(data)
+            data[this._id] = value;
+            this._compact(data);
         }
-    }
+        
+        remove() {
+            let data = this._extract();
+            delete data[this._id];
+            this._compact(data);
+        }
+        
+        get() {
+            let data = this._extract();
+            if (data[this._id] !== undefined) {
+                return data[this._id];
+            } else {
+                return undefined;
+            }
+        }
+        
+        getAll() {
+            return this._extract();
+        }
+        //когда нужно сохранить данные
+        _compact(data) {
+            this._storage.save(JSON.stringify(data));
+        }
+        
+        _extract() {
+            let data = this._storage.get();
+            
+            if (data === null) {
+                return {};
+            } else {
+                return JSON.parse(data);
+            }
+        }
+    }    
 
     class Storage {
         constructor(key) {
@@ -239,10 +275,10 @@ class Sticker {
     let stock = new Stock(key);
     let globalData = stock.getAll();
 
-    let id = 0;
+    var id = 0;
     for (id in globalData) {
         let sticker = new Sticker (document.body, key, id, zIndexer);
-        sticker.restore(globalData(id));
+        sticker.restore(globalData[id]);
 
         zIndexer.add(sticker);
     };
